@@ -5,13 +5,13 @@ import htcondor
 import sys
 import traceback
 
-CONDOR_GLIDEIN_ATTRS = "/etc/condor/config.d/80-glideinwms-attrs"
+CONDOR_GLIDEIN_ATTRS = "/etc/condor/config.d/80-glideinwms-attrs-generated"
 CMS_GLOBAL_POOL = ""
 CMS_HLT_ENTRY_NAME = ""
 
 class HTCondorCollector(object):
     def __init__(self, collector_address):
-        if len(collector_address) <= 0: raise "Invalid Collector Address"
+        if len(collector_address) <= 0: raise Exception("Invalid Collector Address")
         self.address = collector_address
         self.collector = htcondor.Collector(collector_address)
 
@@ -21,7 +21,7 @@ class HTCondorCollector(object):
 
 class HTCondorConfigFile(object):
     def __init__(self, filename):
-        if len(filename) <= 0: raise "invalid file name"
+        if len(filename) <= 0: raise Exception("Invalid file name")
         self.filename = filename
         self.attributes = {}
         self.do_not_quote = [ 'START', ]
@@ -38,6 +38,7 @@ class HTCondorConfigFile(object):
 
     def format(self):
         lines = []
+        lines.append("# This file is AUTO-GENERATED and will be overwritten.\n")
         for key, value in self.attributes.items():
             try:
                 if  not (key in self.do_not_quote): int(value)
@@ -60,21 +61,22 @@ class HTCondorConfigFile(object):
 def main(args):
     try:
         config_file = HTCondorConfigFile(CONDOR_GLIDEIN_ATTRS)
-        constraint = "(glideinmytype==\"glideresource\") && (Name==\"%s\")" % CMS_HLT_ENTRY_NAME
+        constraint = "(glideinmytype==\"glideresource\") && (Name==\"%s\")" % \
+            classad.quote(CMS_HLT_ENTRY_NAME)
         collector = HTCondorCollector(CMS_GLOBAL_POOL)
-        results = collector.query(constraint=constraint)
+        ads = collector.query(constraint=constraint)
+        key_list = []
         # We expect only one ad.  If there are more then one, we ignore all but
         # the very first ad.
-        ad = classad.parse(str(results[0]))
-        key_list = []
-        for key, value in ad.items():
+        for key, value in ad[0].items():
             if key.startswith("GLIDEIN_"):
                 config_file.set_attribute(key, value)
                 key_list.append(key)
             elif key == "GlideClientMatchingInternalPythonExpr":
                 start_value = "$(START) && %s" % value
                 config_file.set_attribute("START", start_value)
-        config_file.set_attribute("STARTD_ATTRS", "$(STARTD_ATTRS) %s" % " ".join(key_list))
+        config_file.set_attribute("STARTD_ATTRS", "$(STARTD_ATTRS) %s" % \
+            " ".join(key_list))
         config_file.write()
         # No Errors!  Return 0
         return 0
