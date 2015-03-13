@@ -37,6 +37,7 @@ class HTCondorConfigFile(object):
                 self.attributes[key.strip()] = value.strip()
 
     def format(self):
+        STARTD_ATTRS = []
         lines = []
         lines.append("# This file is AUTO-GENERATED and will be overwritten.\n")
         for key, value in self.attributes.items():
@@ -45,6 +46,10 @@ class HTCondorConfigFile(object):
                 lines.append("%s = %s\n" % (key, value))
             except:
                 lines.append("%s = \"%s\"\n" % (key, value))
+            if not (key == 'START'): STARTD_ATTRS.append(key)
+        # set the config so that all the downloaded attributes are advertised 
+        # (with the exception of the START expression) 
+        lines.append("STARTD_ATTRS = \"%s\"\n" % " ".join(STARTD_ATTRS))
         return lines
 
     def write(self):
