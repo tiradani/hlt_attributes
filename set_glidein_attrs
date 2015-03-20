@@ -66,14 +66,14 @@ class HTCondorConfigFile(object):
 def main(args):
     try:
         config_file = HTCondorConfigFile(CONDOR_GLIDEIN_ATTRS)
-        constraint = "(glideinmytype==\"glideresource\") && (Name==\"%s\")" % \
+        constraint = "(glideinmytype==\"glideresource\") && (Name==%s)" % \
             classad.quote(CMS_HLT_ENTRY_NAME)
         collector = HTCondorCollector(CMS_GLOBAL_POOL)
         ads = collector.query(constraint=constraint)
         key_list = []
         # We expect only one ad.  If there are more then one, we ignore all but
         # the very first ad.
-        for key, value in ad[0].items():
+        for key, value in ads[0].items():
             if key.startswith("GLIDEIN_"):
                 config_file.set_attribute(key, value)
                 key_list.append(key)
