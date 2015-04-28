@@ -77,9 +77,24 @@ def main(args):
             if key.startswith("GLIDEIN_"):
                 config_file.set_attribute(key, value)
                 key_list.append(key)
-            elif key == "GlideClientMatchingInternalPythonExpr":
-                start_value = "$(START) && %s" % value
-                config_file.set_attribute("START", start_value)
+# AT (April 28, 2015)
+# For the moment we are commenting this out.  It appears that the START 
+# expression given in the Factory collector does not work as expected.
+#  
+# Keeping this code in place, mainly so that I don't forget which classad 
+# attribute is supposed to contain the START expression.  If we ever want to 
+# revist we will have to get the glideinWMS team to fix this attribute.
+#
+#            elif key == "GlideClientMatchingInternalPythonExpr":
+#                start_value = "$(START) && %s" % value
+#                config_file.set_attribute("START", start_value)
+
+        # Hardcode a simple START expression for now.
+        start_value = "ifthenelse(DESIRED_Sites isnt undefined, " \
+                      "stringListMember(GLIDEIN_CMSSite,DESIRED_Sites), "\
+                      "undefined)"
+        config_file.set_attribute("START", start_value)
+
         config_file.write()
         # No Errors!  Return 0
         return 0
